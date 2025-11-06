@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>営業メッセージ自動生成</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <style>
+    :root {
+      --maxw: 420px;
+      --bg: #0f172a;
+      --card: #111827;
+      --line: #1f2937;
+      --ink: #f8fafc;
+      --muted: #9ca3af;
+      --accent: #2563eb;
+      --secondary: #475569;
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .container {
+      width: 100%;
+      height: 800px;
+      max-width: var(--maxw);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      padding: 20px;
+    }
+    h1 { font-size: 18px; margin: 0 0 16px; }
+    .row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    label { font-size: 13px; color: var(--muted); }
+    .input-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    input {
+      flex: 1;
+      height: 30px;
+      padding: 12px 20px;
+      padding-right: 70px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      background: #0b1220;
+      color: var(--ink);
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus {
+      border-color:#60a5fa;
+      box-shadow:0 0 0 3px rgba(96,165,250,.15);
+    }
+    /* スリムなクリアボタン */
+    .tiny {
+      height: 56px;             /* 入力欄と高さ揃える */
+      width: 10px;              /* 横幅を半分くらいに */
+      font-size: 10px;
+      border-radius: 10px;
+      border: 0;
+      background:#334155;
+      color:#fff;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .tiny:hover { background:#475569; }
+    .tiny:active { opacity: 0.8; }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      height: 48px;
+      border-radius: 12px;
+      border: 0;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    #generate { background: var(--accent); }
+    #copy { background: #3b82f6;               /* よくある青色 */
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  height: 48px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 3px 10px rgba(59,130,246,0.3);
+ }
+    #clear-all { background: #334155; }
+    .output {
+      white-space: pre-wrap;
+      padding: 14px;
+      border-radius: 12px;  
+      background:#0b1220;
+      border:1px dashed #334155;
+      min-height: 140px;
+      font-size: 16px;
+      line-height: 1.6;
+      max-height: 200px;            /* 高さ制限（ちょうどiPhone縦画面に収まる） */
+      overflow-y: auto;             /* 内容だけスクロール */
+      -webkit-overflow-scrolling: touch; /* iPhoneスムーズスクロール */
+    
+    }
+    .hint { font-size: 12px; color:#93c5fd; margin-top: 6px; }
+    .ok { color:#86efac; font-size:12px; }
+    .err { color:#fca5a5; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>営業メッセージ自動生成</h1>
+
+    <!-- 入力欄 -->
+    <div class="row">
+      <label for="to">送信先アカウント名（〇〇）</label>
+      <div class="input-wrap">
+        <input id="to" placeholder="例）あや｜キャリア戦略">
+        <button class="tiny" id="clear-to">クリア</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="from">自分のアカウント名（△△）</label>
+      <div class="input-wrap">
+        <input id="from" placeholder="例）ハル｜副業サバイバー">
+        <button class="tiny" id="clear-from">クリア</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="genre1">ジャンル1（□□）</label>
+      <div class="input-wrap">
+        <input id="genre1" placeholder="例）キャリア">
+        <button class="tiny" id="clear-genre1">クリア</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="genre2">ジャンル2（■■）</label>
+      <div class="input-wrap">
+        <input id="genre2" placeholder="例）副業">
+        <button class="tiny" id="clear-genre2">クリア</button>
+      </div>
+    </div>
+
+    <!-- ボタン群：入力のすぐ下に配置 -->
+    <div class="btn-group">
+      <button id="copy" disabled>作成＆コピー</button>
+      <button id="clear-all">全消去</button>
+    </div>
+
+    <div id="status" class="hint"></div>
+    <div id="output" class="output"></div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    const template = (to, from, g1, g2) => 
+`${to}さんの発信、拝見しました。
+「${g1}×${g2}」という切り口、とても良いですね。
+一見よくあるテーマに見えても、発信の“視点の置き方”に独自性があって、
+ハイキャリア層が共感しやすい構成だと感じました。
+
+わたくし${from}はキャリア×副業領域のアカウント支援をしており、
+これまで200件以上のアカウントを“成果の出る構造”に再設計してきました。
+特に、“発信の軸をブランド化していくプロセス設計”を得意としています。
+
+もしよければ、【無料診断】という形で一度お話させてください。
+${to}さんの発信テーマをさらに伸ばす具体策を、30分ほどで共有できると思います。`;
+
+    const validate = () => ["to","from","genre1","genre2"].every(id => $(id).value.trim());
+
+    async function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext)
+          await navigator.clipboard.writeText(text);
+        else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position="fixed";ta.style.left="-9999px";
+          document.body.appendChild(ta);
+          ta.select();document.execCommand("copy");document.body.removeChild(ta);
+        }
+        $("status").textContent = "✅ コピーしました";
+        $("status").className = "ok";
+    }
+
+    async function generateAndCopy() {
+      const to = $("to").value.trim();
+      const from = $("from").value.trim();
+      const g1 = $("genre1").value.trim();
+      const g2 = $("genre2").value.trim();
+      if (!validate()) return;
+      const text = template(to, from, g1, g2);
+      $("output").textContent = text;
+      $("copy").disabled = false;
+      await copyToClipboard(text);
+    }
+
+    ["to","from","genre1","genre2"].forEach(id=>{
+      $(id).addEventListener("input", ()=>{ if (validate()) generateAndCopy(); });
+    });
+
+    $("copy").onclick = ()=>{ const t=$("output").textContent.trim(); if(t) copyToClipboard(t); };
+
+    const clearField = id => { $(id).value=""; $(id).focus(); $("status").textContent="入力をクリアしました"; $("status").className="hint"; $("copy").disabled=true; };
+    $("clear-to").onclick = () => clearField("to");
+    $("clear-from").onclick = () => clearField("from");
+    $("clear-genre1").onclick = () => clearField("genre1");
+    $("clear-genre2").onclick = () => clearField("genre2");
+
+    $("clear-all").onclick = ()=>{
+      ["to","from","genre1","genre2"].forEach(id=>$(id).value="");
+      $("output").textContent="";$("status").textContent="すべてクリアしました";$("status").className="hint";$("copy").disabled=true;
+    };
+  </script>
+</body>
+</html>
